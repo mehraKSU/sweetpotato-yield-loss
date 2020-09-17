@@ -1,0 +1,140 @@
+---
+title: "data-cleaning"
+author: "Lucky Mehra"
+date: "9/10/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-packages}
+# load packages
+pacman::p_load(tidyverse,
+               here,
+               readxl,
+               janitor)
+```
+
+```{r jennings}
+# vector for new column names
+column_names <- c("study_name_or_number",
+                  'year',
+                  'published',
+                  'location_information',
+                  'sandy_loam',
+                  'sandy_clay_loam',
+                  'sandy_clay',
+                  'loamy_sand',
+                  'clay_loam',
+                  'silt_loam',
+                  'silt_clay_loam',
+                  'any_different_soil',
+                  'variety',
+                  'irri_overhead',
+                  'irri_drip',
+                  'irri_other',
+                  'non_irrigated',
+                  'primary_weed',
+                  'secondary_weed',
+                  'other_weed',
+                  'yield_wf_num_1',
+                  'yield_wf_jumbo',
+                  'yield_wf_canner',
+                  'yield_wf_cull',
+                  'yield_weedy_num_1',
+                  'yield_weedy_jumbo',
+                  'yield_weedy_canner',
+                  'yield_weedy_cull',
+                  'yield_units',
+                  'comment1',
+                  'comment2'
+                  )
+
+# import data
+jennings <- read_excel(here::here('data', 'Weed Loss Estimates for Sweetpotato 11-8-2019_CS.xlsx'),
+                       sheet = "Jennings_NC") %>% 
+  remove_empty() %>% 
+  rename_at(vars(names(.)), ~ column_names) %>% 
+  dplyr::slice(4:n())
+
+# pivot long soil and irrigation variables
+jennings <- jennings %>% 
+  dplyr::filter(yield_wf_num_1 != "NA") %>% 
+  pivot_longer(cols = sandy_loam:any_different_soil,
+               names_to = "soil_type",
+               values_to = "soil_type_present") %>% 
+  dplyr::filter(soil_type_present != "NA") %>% 
+  pivot_longer(cols = irri_overhead:non_irrigated,
+               names_to = "irrigation_type",
+               values_to = "irrigation_type_present") %>% 
+  dplyr::filter(irrigation_type_present != "NA") %>% 
+  dplyr::select(-soil_type_present)
+```
+
+```{r meyers}
+# vector for new column names
+column_names <- c("study_name_or_number",
+                  'year',
+                  # 'published',
+                  'location_information',
+                  'sandy_loam',
+                  'sandy_clay_loam',
+                  'sandy_clay',
+                  'loamy_sand',
+                  'clay_loam',
+                  'silt_loam',
+                  'silt_clay_loam',
+                  'any_different_soil',
+                  'variety',
+                  'irri_overhead',
+                  'irri_drip',
+                  'irri_other',
+                  'non_irrigated',
+                  'primary_weed',
+                  'secondary_weed',
+                  'other_weed',
+                  'yield_wf_num_1',
+                  'yield_wf_jumbo',
+                  'yield_wf_canner',
+                  'yield_wf_cull',
+                  'yield_weedy_num_1',
+                  'yield_weedy_jumbo',
+                  'yield_weedy_canner',
+                  'yield_weedy_cull',
+                  'yield_units'
+                  # 'comment1',
+                  # 'comment2'
+                  )
+
+meyers <- read_excel(here::here('data', 'Weed Loss Estimates for Sweetpotato 11-8-2019_CS.xlsx'),
+                       sheet = "Meyers_MSU") %>% 
+  remove_empty() %>% 
+  rename_at(vars(names(.)), ~ column_names) %>% 
+  dplyr::slice(4:n())
+
+# pivot long soil and irrigation variables
+meyers <- meyers %>% 
+  dplyr::filter(yield_wf_num_1 != "NA") %>% 
+  pivot_longer(cols = sandy_loam:any_different_soil,
+               names_to = "soil_type",
+               values_to = "soil_type_present") %>% 
+  dplyr::filter(soil_type_present != "NA") %>% 
+  pivot_longer(cols = irri_overhead:non_irrigated,
+               names_to = "irrigation_type",
+               values_to = "irrigation_type_present") %>% 
+  dplyr::filter(irrigation_type_present != "NA") %>% 
+  dplyr::select(-soil_type_present)
+```
+
+```{r culpepper}
+culpepper <- read_excel(here::here('data', 'Weed Loss Estimates for Sweetpotato 11-8-2019_CS.xlsx'),
+                       sheet = "Culpepper_GA") %>% 
+  remove_empty() %>% 
+  rename_at(vars(names(.)), ~ column_names) %>% 
+  dplyr::slice(4:n())
+```
+
+
+
