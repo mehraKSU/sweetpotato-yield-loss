@@ -1,0 +1,89 @@
+---
+title: "03-analysis"
+author: "Lucky Mehra"
+date: "9/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+yieldloss %>% 
+  count(pi, sort = TRUE)
+
+yieldloss %>% 
+  count(variety, sort = TRUE)
+
+yieldloss %>% 
+  count(soil_type, sort = TRUE)
+
+yieldloss %>% 
+  count(primary_weed, sort = TRUE)
+
+yieldloss %>% 
+  count(irrigation_type, sort = TRUE)
+
+yieldloss %>% 
+  count(location, sort = TRUE)
+```
+
+Make figures.
+
+```{r figures}
+
+# histogram  of marketable loss
+hist_market <- yieldloss %>% 
+  ggplot(mapping = aes(x = marketable_loss)) +
+  geom_histogram()
+# histogram of total loss
+# hist_total <- yieldloss %>% 
+#   ggplot(mapping = aes(x = total_loss)) +
+#   geom_histogram()
+# 
+# hist_market / hist_total
+
+# yield loss by location
+year_market <- yieldloss %>% 
+  dplyr::filter(!is.na(year)) %>% 
+  ggplot(mapping = aes(x = as_factor(year), y = marketable_loss)) +
+  geom_boxplot()
+
+# year_total <- yieldloss %>% 
+#   dplyr::filter(!is.na(year)) %>% 
+#   ggplot(mapping = aes(x = as_factor(year), y = total_loss)) +
+#   geom_boxplot()
+
+# graphs of marketable yield loss and total yield loss are very similar
+# therefore, only goint to plot marketable yield loss
+
+year_market
+
+# create a function to plot by different variables
+plot_market_loss_by <- function(var){
+  yieldloss %>% 
+  dplyr::filter(!is.na({{var}})) %>% 
+  ggplot(mapping = aes(x = as_factor({{var}}), y = marketable_loss)) +
+  geom_boxplot() +
+    coord_flip()
+}
+
+# year
+plot_market_loss_by(year)
+
+# location
+plot_market_loss_by(location)
+
+# variety
+plot_market_loss_by(variety)
+
+# primary weed
+plot_market_loss_by(primary_weed)
+
+# soil type
+plot_market_loss_by(soil_type)
+
+# irrigation type
+plot_market_loss_by(irrigation_type)
+```
