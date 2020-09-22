@@ -1,42 +1,121 @@
 ---
-title: "03-analysis"
+title: "Preliminary analysis of sweetpotato yield loss data"
 author: "Lucky Mehra"
 date: "9/18/2020"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  pdf_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE)
 ```
+
+```{r load-packages}
+if(!require(pacman)){
+  install.packages("pacman")
+}
+
+pacman::p_load(tidyverse,
+               usdata,
+               janitor,
+               fs,
+               gt,
+               plotrix)
+
+
+yieldloss <- read_csv(here::here('data/clean-data', 'yieldloss.csv'))
+```
+
+The dataset contains data from `r nrow(yieldloss)` studies from sweetpotato growing
+states of the country.
+
+## Study count by different categories
+
+Study count by **Principal Investigator**.
 
 ```{r}
 yieldloss %>% 
-  count(pi, sort = TRUE)
-
-yieldloss %>% 
-  count(variety, sort = TRUE)
-
-yieldloss %>% 
-  count(soil_type, sort = TRUE)
-
-yieldloss %>% 
-  count(primary_weed, sort = TRUE)
-
-yieldloss %>% 
-  count(irrigation_type, sort = TRUE)
-
-yieldloss %>% 
-  count(location, sort = TRUE)
+  count(pi, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    pi = "Principal Investigator"
+  )
 ```
 
-Make figures.
+Study count by **sweetpotato variety**.
 
-```{r figures}
+```{r}
+yieldloss %>% 
+  count(variety, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    variety = "Sweetpotato variety"
+  )
+```
 
+Study count by **soil type**.
+
+```{r}
+yieldloss %>% 
+  count(soil_type, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    soil_type = "Soil type"
+  )
+```
+
+Study count by **primary weed type**.
+
+```{r}
+yieldloss %>% 
+  count(primary_weed, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    primary_weed = "Primary weed"
+  )
+```
+
+Study count by **irrigation type**.
+
+```{r}
+yieldloss %>% 
+  count(irrigation_type, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    irrigation_type = "Type of irrigation"
+  )
+```
+
+Study count by **location**.
+
+```{r}
+yieldloss %>% 
+  count(location, sort = TRUE) %>% 
+  gt() %>% 
+  cols_label(
+    location = "Location"
+  )
+```
+
+## Figures
+
+Distribution of marketable yield loss across `r nrow(yieldloss)` studies.
+
+```{r figures-histogram}
 # histogram  of marketable loss
 hist_market <- yieldloss %>% 
   ggplot(mapping = aes(x = marketable_loss)) +
-  geom_histogram()
+  geom_histogram() +
+  ggtitle("Distibution of marketable yield loss") +
+  ylab("Number of studies")
+
+hist_market
+
 # histogram of total loss
 # hist_total <- yieldloss %>% 
 #   ggplot(mapping = aes(x = total_loss)) +
@@ -44,46 +123,148 @@ hist_market <- yieldloss %>%
 # 
 # hist_market / hist_total
 
-# yield loss by location
-year_market <- yieldloss %>% 
-  dplyr::filter(!is.na(year)) %>% 
-  ggplot(mapping = aes(x = as_factor(year), y = marketable_loss)) +
-  geom_boxplot()
-
-# year_total <- yieldloss %>% 
-#   dplyr::filter(!is.na(year)) %>% 
-#   ggplot(mapping = aes(x = as_factor(year), y = total_loss)) +
-#   geom_boxplot()
-
 # graphs of marketable yield loss and total yield loss are very similar
 # therefore, only goint to plot marketable yield loss
+```
 
-year_market
+```{r, include=FALSE}
+# import the custom function to make plots
+source(here::here("R", "functions.R"),
+       local = knitr::knit_global())
 
-# create a function to plot by different variables
-plot_market_loss_by <- function(var){
-  yieldloss %>% 
-  dplyr::filter(!is.na({{var}})) %>% 
-  ggplot(mapping = aes(x = as_factor({{var}}), y = marketable_loss)) +
-  geom_boxplot() +
-    coord_flip()
-}
+```
 
+Average marketable loss by **year**.
+
+```{r}
 # year
 plot_market_loss_by(year)
+```
 
+Average marketable loss by **location**.
+
+```{r}
 # location
 plot_market_loss_by(location)
+```
 
+Average marketable loss by **variety**.
+
+```{r}
 # variety
 plot_market_loss_by(variety)
+```
 
+Average marketable loss by **primary weed**.
+
+```{r}
 # primary weed
 plot_market_loss_by(primary_weed)
+```
 
+Average marketable loss by **soil type**.
+
+```{r}
 # soil type
 plot_market_loss_by(soil_type)
+```
 
+Average marketable loss by **irrigation type**.
+
+```{r}
 # irrigation type
 plot_market_loss_by(irrigation_type)
 ```
+
+## Tables
+
+Create a table to report average marketable yield loss by state.
+
+```{r loss-by-state}
+loss_by_state <- yieldloss %>% 
+  separate(col = location,
+           into = c("city", "state"),
+           sep = "_") %>% 
+  mutate(state = abbr2state(state),
+         state = if_else(state %in% c("Louisiana",
+                                       "Mississippi",
+                                       "North Carolina"), state, "Other States")) %>% 
+  group_by(state) %>% 
+  summarise(marketable_loss = mean(marketable_loss, na.rm = TRUE),
+            number_of_studies = n())
+
+loss_by_state %>% 
+  arrange(desc(number_of_studies)) %>% 
+  mutate_if(is.numeric, round, digits=1) %>% 
+  gt()
+```
+
+<br>
+
+<br>
+
+Merge the above table with sweetpotato production and area harvested data from USDA
+NASS.
+
+```{r}
+data_dir <- here::here('data/raw-data/usda-nass')
+
+csv_files <- fs::dir_ls(data_dir, regexp = "\\.csv$")
+
+usda_nass <- csv_files %>% 
+  map_dfr(read_csv) %>% 
+  remove_empty() %>% 
+  clean_names()
+
+usda_nass_1 <- usda_nass %>% 
+  dplyr::filter(reference_period == 'MARKETING YEAR') %>% 
+  mutate(reference_period = "YEAR") %>% 
+  dplyr::select(location, price_received_in_cwt) %>% 
+  left_join(usda_nass %>% 
+              dplyr::select(-price_received_in_cwt) %>% 
+              dplyr::filter(reference_period == 'YEAR'), by = "location") %>% 
+  mutate(state = str_to_title(location)) %>% 
+  dplyr::select(state, area_harvested_in_acres,
+                production_in, # production in dollars
+                production_in_cwt,
+                yield_in_cwt_acre,
+                price_received_in_cwt
+                )
+
+potential_loss <- loss_by_state %>% 
+  left_join(usda_nass_1) %>% 
+  rename(production_in_dollars = production_in) %>% 
+  mutate(loss_in_dollars = (production_in_dollars * marketable_loss)/100,
+         loss_in_cwt = (production_in_cwt * marketable_loss)/100,
+         loss_in_yield_cwt_per_acre = (yield_in_cwt_acre * marketable_loss)/100)
+
+potential_loss %>% 
+  relocate(state, marketable_loss, loss_in_dollars,
+           loss_in_cwt, loss_in_yield_cwt_per_acre) %>% 
+  mutate_if(is.numeric, round, digits=1) %>% 
+  dplyr::select(-loss_in_yield_cwt_per_acre,
+                -price_received_in_cwt
+                  ) %>% 
+  gt() %>% 
+  cols_label(
+    state = "State",
+    marketable_loss = "Marketable loss (%)",
+    loss_in_dollars = "Loss in $s",
+    loss_in_cwt = "Loss in cwt",
+    number_of_studies = "Number of studies",
+    area_harvested_in_acres = "Harvested (acres)",
+    production_in_cwt = "Production in cwt",
+    production_in_dollars = "Production in $s",
+    yield_in_cwt_acre = "Yield (cwt/acre)"
+  ) %>% 
+    tab_footnote(
+    footnote = "One cwt = 100 lbs",
+    locations = cells_column_labels(
+      columns = vars(loss_in_cwt,
+                     production_in_cwt,
+                     yield_in_cwt_acre))
+  )
+
+```
+
+

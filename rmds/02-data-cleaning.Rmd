@@ -28,10 +28,11 @@ sweetpotato <- read_csv(here::here('data/clean-data', 'sweetpotato.csv')) %>%
                                      yield_weedy_num_1 + yield_weedy_petite_1,
                                      yield_weedy_num_1)) %>% 
   dplyr::select(-yield_wf_petite_1, -yield_weedy_petite_1) %>% 
-  mutate(yield_wf_marketable = yield_wf_num_1 + yield_wf_jumbo,
-         yield_wf_total = yield_wf_marketable + yield_wf_canner,
-         yield_weedy_marketable = yield_weedy_num_1 + yield_weedy_jumbo,
-         yield_weedy_total = yield_weedy_marketable + yield_weedy_canner)
+  rowwise() %>% 
+  mutate(yield_wf_marketable = sum(c(yield_wf_num_1, yield_wf_jumbo), na.rm = TRUE),
+         yield_wf_total = sum(c(yield_wf_marketable, yield_wf_canner), na.rm = TRUE),
+         yield_weedy_marketable = sum(c(yield_weedy_num_1, yield_weedy_jumbo), na.rm = TRUE),
+         yield_weedy_total = sum(c(yield_weedy_marketable, yield_weedy_canner), na.rm = TRUE))
 
 # calculate marketable and total yield loss
 yieldloss <- sweetpotato %>% 
@@ -51,7 +52,9 @@ yieldloss <- yieldloss %>%
          variety = str_to_lower(variety)) %>% 
   relocate(year, location, variety, primary_weed, soil_type,
            irrigation_type, irrigation_type_present, pi, marketable_loss,
-           total_loss) %>% 
+           total_loss) 
+
+yieldloss %>% 
   write_csv(here::here('data/clean-data', 'yieldloss.csv'))
 ```
 
